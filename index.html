@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片字幕生成工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+        
+        :root {
+            --apple-blue: #0071e3;
+            --apple-green: #34c759;
+            --apple-bg: #f5f5f7;
+            --apple-card: #ffffff;
+            --apple-text: #1d1d1f;
+            --apple-text-secondary: #86868b;
+            --apple-border: #d2d2d7;
+            --apple-radius: 12px;
+            --apple-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+        
+        body {
+            background-color: var(--apple-bg);
+            color: var(--apple-text);
+            line-height: 1.5;
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--apple-text);
+        }
+        
+        .app-container {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            overflow: visible;
+            height: 85vh;
+        }
+        
+        .preview-section {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+            max-height: none;
+        }
+        
+        .control-section {
+            flex: 0.8;
+            background-color: var(--apple-card);
+            border-radius: var(--apple-radius);
+            box-shadow: var(--apple-shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: none;
+            overflow-y: auto;
+        }
+        
+        .preview-card {
+            background-color: var(--apple-card);
+            border-radius: var(--apple-radius);
+            box-shadow: var(--apple-shadow);
+            overflow: hidden;
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-height: none;
+        }
+        
+        .preview-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .preview-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--apple-text);
+        }
+        
+        .preview-content {
+            padding: 15px;
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fafafa;
+            height: 100%;
+        }
+        
+        .image-container {
+            position: relative;
+            max-width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .image-area {
+            border: 2px dashed var(--apple-border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            background-color: rgba(0, 0, 0, 0.02);
+            min-height: 150px;
+            min-width: 200px;
+            max-height: none;
+            height: auto;
+        }
+        
+        .image-area.has-image {
+            border: none;
+            padding: 0;
+            background-color: transparent;
+            overflow: auto;
+        }
+        
+        .image-area img {
+            max-width: 100%;
+            max-height: 55vh;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        
+        .dropzone-text {
+            color: var(--apple-text-secondary);
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .dropzone-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 12px;
+            color: var(--apple-text-secondary);
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--apple-text);
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--apple-text);
+        }
+        
+        textarea {
+            width: 100%;
+            height: 90px;
+            padding: 10px;
+            border: 1px solid var(--apple-border);
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 15px;
+            background-color: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--apple-border);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+        
+        input[type="file"] {
+            padding: 12px;
+            background-color: #f5f5f7;
+            cursor: pointer;
+        }
+        
+        input[type="color"] {
+            height: 44px;
+            cursor: pointer;
+        }
+        
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .generate-btn {
+            background-color: var(--apple-blue);
+            color: white;
+            margin-top: 5px;
+        }
+        
+        .generate-btn:hover {
+            background-color: #0062cc;
+        }
+        
+        .download-btn {
+            background-color: var(--apple-green);
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .download-btn:hover {
+            background-color: #2eb351;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .button-group button {
+            flex: 1;
+        }
+        
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--apple-blue);
+            background-color: transparent;
+            border: 1px solid var(--apple-blue);
+            font-weight: 500;
+        }
+        
+        .upload-btn:hover {
+            background-color: rgba(0, 113, 227, 0.05);
+        }
+        
+        .results-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .result-area {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: auto;
+            gap: 16px;
+        }
+        
+        .result-area img {
+            max-width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: var(--apple-shadow);
+        }
+        
+        .preview-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--apple-border);
+        }
+        
+        .preview-tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--apple-text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .preview-tab.active {
+            color: var(--apple-blue);
+            border-bottom-color: var(--apple-blue);
+        }
+        
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow: auto;
+        }
+        
+        .tab-content.active {
+            display: flex;
+        }
+        
+        .result-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .result-tab {
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #f0f0f0;
+            color: var(--apple-text-secondary);
+        }
+        
+        .result-tab.active {
+            background-color: var(--apple-blue);
+            color: white;
+        }
+        
+        .result-image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            overflow: auto;
+        }
+        
+        .result-image-container img {
+            max-width: 100%;
+            max-height: 55vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: var(--apple-shadow);
+            transition: all 0.3s;
+        }
+        
+        .form-group.style-options {
+            margin-top: 3px;
+            margin-bottom: 10px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 14px;
+            margin-top: 6px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        
+        .radio-option input {
+            width: auto;
+            margin: 0;
+            padding: 0;
+            cursor: pointer;
+        }
+        
+        /* 响应式布局 */
+        @media (max-width: 992px) {
+            body {
+                padding: 16px;
+                height: auto;
+            }
+            
+            .app-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .preview-section, .control-section {
+                width: 100%;
+                height: auto;
+            }
+            
+            .preview-section {
+                margin-bottom: 24px;
+                min-height: 300px;
+            }
+            
+            .preview-card {
+                min-height: 300px;
+            }
+            
+            .image-area {
+                min-height: 200px;
+            }
+        }
+        
+        /* 苹果风格的滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>图片字幕生成工具</h1>
+    </div>
+    
+    <div class="app-container">
+        <div class="preview-section">
+            <div class="preview-card">
+                <div class="preview-tabs">
+                    <div class="preview-tab active" id="sourceTab">原始图片</div>
+                    <div class="preview-tab" id="resultTab">生成效果</div>
+                </div>
+                
+                <div class="tab-content active" id="sourceContent">
+                    <div class="preview-content">
+                        <div class="image-container">
+                            <div id="imagePreview" class="image-area">
+                                <svg class="dropzone-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="dropzone-text">拖放图片到此处或点击上传</span>
+                                <button class="upload-btn" id="triggerUpload">选择图片</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="resultContent">
+                    <div class="preview-content">
+                        <div id="result" class="result-area">
+                            <div class="result-tabs" id="resultStyleTabs" style="display: none;">
+                                <div class="result-tab active" id="normalStyleTab">透明背景</div>
+                                <div class="result-tab" id="translucentStyleTab">半透明背景</div>
+                            </div>
+                            <div class="result-image-container" id="normalStyleResult"></div>
+                            <div class="result-image-container" id="translucentStyleResult" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <div class="section-title">设置选项</div>
+            
+            <div class="form-group" style="display: none;">
+                <label for="imageUpload">选择图片</label>
+                <input type="file" id="imageUpload" accept="image/*">
+            </div>
+            
+            <div class="form-group">
+                <label for="subtitles">字幕文本（每行一条）</label>
+                <textarea id="subtitles" placeholder="在这里输入字幕内容，每行一条..."></textarea>
+            </div>
+            
+            <div class="options-grid">
+                <div class="form-group">
+                    <label for="textColor">字幕颜色</label>
+                    <input type="color" id="textColor" value="#00ffff">
+                </div>
+                
+                <div class="form-group">
+                    <label for="fontSize">字幕大小</label>
+                    <select id="fontSize">
+                        <option value="20">小</option>
+                        <option value="30" selected>中</option>
+                        <option value="40">大</option>
+                        <option value="50">特大</option>
+                    </select>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="watermark">水印文字</label>
+                    <input type="text" id="watermark" placeholder="输入右上角水印（可选）">
+                </div>
+            </div>
+
+            <div class="form-group style-options">
+                <label>生成样式</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="style" value="normal" checked> 透明背景
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="style" value="translucent"> 半透明背景
+                    </label>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="generateBtn" class="generate-btn">生成字幕图片</button>
+                <button id="downloadBtn" class="download-btn" style="display: none;">下载图片</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取元素
+            const imageUpload = document.getElementById('imageUpload');
+            const imagePreview = document.getElementById('imagePreview');
+            const subtitlesInput = document.getElementById('subtitles');
+            const textColor = document.getElementById('textColor');
+            const fontSize = document.getElementById('fontSize');
+            const watermarkText = document.getElementById('watermark');
+            const generateBtn = document.getElementById('generateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const result = document.getElementById('result');
+            const triggerUpload = document.getElementById('triggerUpload');
+            const sourceTab = document.getElementById('sourceTab');
+            const resultTab = document.getElementById('resultTab');
+            const sourceContent = document.getElementById('sourceContent');
+            const resultContent = document.getElementById('resultContent');
+            
+            // 结果样式相关元素
+            const resultStyleTabs = document.getElementById('resultStyleTabs');
+            const normalStyleTab = document.getElementById('normalStyleTab');
+            const translucentStyleTab = document.getElementById('translucentStyleTab');
+            const normalStyleResult = document.getElementById('normalStyleResult');
+            const translucentStyleResult = document.getElementById('translucentStyleResult');
+            
+            let uploadedImage = null;
+            let normalResultImageUrl = null;
+            let translucentResultImageUrl = null;
+            let recommendedColor = "#00ffff"; // 默认颜色
+            let activeResultStyle = 'normal'; // 当前活跃的结果样式
+            
+            // 点击上传按钮触发文件选择
+            triggerUpload.addEventListener('click', function() {
+                imageUpload.click();
+            });
+            
+            // 处理标签切换
+            sourceTab.addEventListener('click', function() {
+                sourceTab.classList.add('active');
+                resultTab.classList.remove('active');
+                sourceContent.classList.add('active');
+                resultContent.classList.remove('active');
+            });
+            
+            resultTab.addEventListener('click', function() {
+                if (normalResultImageUrl || translucentResultImageUrl) {
+                    resultTab.classList.add('active');
+                    sourceTab.classList.remove('active');
+                    resultContent.classList.add('active');
+                    sourceContent.classList.remove('active');
+                }
+            });
+            
+            // 结果样式标签切换
+            normalStyleTab.addEventListener('click', function() {
+                normalStyleTab.classList.add('active');
+                translucentStyleTab.classList.remove('active');
+                normalStyleResult.style.display = 'flex';
+                translucentStyleResult.style.display = 'none';
+                activeResultStyle = 'normal';
+            });
+            
+            translucentStyleTab.addEventListener('click', function() {
+                translucentStyleTab.classList.add('active');
+                normalStyleTab.classList.remove('active');
+                translucentStyleResult.style.display = 'flex';
+                normalStyleResult.style.display = 'none';
+                activeResultStyle = 'translucent';
+            });
+            
+            // 分析图像并推荐对比度最高的颜色
+            function analyzeImageAndRecommendColor(image) {
+                // 创建临时canvas来分析图像
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = image.width;
+                canvas.height = image.height;
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                
+                // 获取图像底部区域的像素数据（假设字幕会放在底部）
+                const bottomArea = ctx.getImageData(0, Math.max(0, canvas.height - 100), canvas.width, Math.min(100, canvas.height));
+                const pixels = bottomArea.data;
+                
+                // 计算底部区域的平均颜色
+                let r = 0, g = 0, b = 0;
+                for (let i = 0; i < pixels.length; i += 4) {
+                    r += pixels[i];
+                    g += pixels[i + 1];
+                    b += pixels[i + 2];
+                }
+                
+                const totalPixels = pixels.length / 4;
+                r = Math.floor(r / totalPixels);
+                g = Math.floor(g / totalPixels);
+                b = Math.floor(b / totalPixels);
+                
+                // 计算亮度
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                
+                // 选择与背景对比度高的颜色
+                let color;
+                if (brightness > 128) {
+                    // 暗背景用亮色
+                    color = '#00ffff'; // 亮青色
+                    if (r > 150 && g > 150) color = '#0000ff'; // 蓝色
+                    if (b > 150) color = '#ffff00'; // 黄色
+                } else {
+                    // 亮背景用暗色
+                    color = '#ffffff'; // 白色
+                    if (r < 100 && g < 100 && b < 100) color = '#ffff00'; // 黄色
+                }
+                
+                return color;
+            }
+            
+            // 预览上传的图片
+            imageUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        imagePreview.innerHTML = `<img src="${event.target.result}">`;
+                        imagePreview.classList.add('has-image');
+                        uploadedImage = new Image();
+                        uploadedImage.onload = function() {
+                            // 图片加载完成后分析颜色
+                            recommendedColor = analyzeImageAndRecommendColor(uploadedImage);
+                            textColor.value = recommendedColor;
+                        };
+                        uploadedImage.src = event.target.result;
+                        
+                        // 返回到原始图片标签
+                        sourceTab.click();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 支持拖放上传图片
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                imagePreview.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            imagePreview.addEventListener('dragenter', highlight, false);
+            imagePreview.addEventListener('dragover', highlight, false);
+            imagePreview.addEventListener('dragleave', unhighlight, false);
+            imagePreview.addEventListener('drop', handleDrop, false);
+            
+            function highlight() {
+                imagePreview.style.borderColor = 'var(--apple-blue)';
+                imagePreview.style.backgroundColor = 'rgba(0, 113, 227, 0.05)';
+            }
+            
+            function unhighlight() {
+                imagePreview.style.borderColor = 'var(--apple-border)';
+                imagePreview.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+            }
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const file = dt.files[0];
+                
+                unhighlight();
+                
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        imagePreview.innerHTML = `<img src="${event.target.result}">`;
+                        imagePreview.classList.add('has-image');
+                        uploadedImage = new Image();
+                        uploadedImage.onload = function() {
+                            // 图片加载完成后分析颜色
+                            recommendedColor = analyzeImageAndRecommendColor(uploadedImage);
+                            textColor.value = recommendedColor;
+                        };
+                        uploadedImage.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            
+            // 生成字幕图片（两种样式）
+            generateBtn.addEventListener('click', function() {
+                if (!uploadedImage) {
+                    alert('请先上传图片');
+                    return;
+                }
+                
+                const subtitles = subtitlesInput.value.trim().split('\n').filter(line => line.trim() !== '');
+                if (subtitles.length === 0) {
+                    alert('请输入至少一行字幕文本');
+                    return;
+                }
+                
+                // 清除先前结果
+                normalStyleResult.innerHTML = '';
+                translucentStyleResult.innerHTML = '';
+                
+                // 获取选择的样式
+                const selectedStyle = document.querySelector('input[name="style"]:checked').value;
+                
+                // 创建两种样式的图片
+                createNormalStyleImage(subtitles);
+                createTranslucentStyleImage(subtitles);
+                
+                // 显示结果选项卡和下载按钮
+                resultStyleTabs.style.display = 'flex';
+                downloadBtn.style.display = 'block';
+                
+                // 根据用户选择的样式显示对应结果
+                if (selectedStyle === 'normal') {
+                    normalStyleTab.click();
+                } else {
+                    translucentStyleTab.click();
+                }
+                
+                // 自动切换到结果标签
+                resultTab.click();
+            });
+            
+            // 创建透明背景样式图片
+            function createNormalStyleImage(subtitles) {
+                // 创建一个canvas元素
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // 设置画布大小
+                canvas.width = uploadedImage.width;
+                canvas.height = uploadedImage.height;
+                
+                // 绘制原始图片
+                ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+                
+                // 字幕设置
+                const fontSizeValue = parseInt(fontSize.value);
+                
+                // 单个字幕条的高度 - 增加高度使字幕更加舒适
+                const singleStripHeight = fontSizeValue * 2; // 设为字体大小的2倍，比原来的固定+20更合理
+                const totalSubtitles = subtitles.length;
+                const subtitleAreaHeight = totalSubtitles * singleStripHeight;
+                
+                // 仅截取图片底部作为字幕背景的样本区域
+                const sampleHeight = singleStripHeight;
+                const sampleY = canvas.height - sampleHeight;
+                
+                // 创建新的画布
+                const resultCanvas = document.createElement('canvas');
+                const resultCtx = resultCanvas.getContext('2d');
+                resultCanvas.width = canvas.width;
+                resultCanvas.height = canvas.height + subtitleAreaHeight - sampleHeight;
+                
+                // 绘制原始图片（除了底部样本区域）
+                resultCtx.drawImage(uploadedImage, 0, 0, canvas.width, sampleY, 0, 0, canvas.width, sampleY);
+                
+                // 创建样本图像的数据
+                const sampleCanvas = document.createElement('canvas');
+                const sampleCtx = sampleCanvas.getContext('2d');
+                sampleCanvas.width = canvas.width;
+                sampleCanvas.height = sampleHeight;
+                
+                // 在样本画布上绘制原图底部区域
+                sampleCtx.drawImage(uploadedImage, 0, sampleY, canvas.width, sampleHeight, 0, 0, canvas.width, sampleHeight);
+                
+                // 为每行字幕创建和添加背景+文字
+                for (let i = 0; i < totalSubtitles; i++) {
+                    // 计算当前字幕在结果画布中的位置
+                    const destY = sampleY + (i * singleStripHeight);
+                    
+                    // 在结果画布上重复绘制样本区域
+                    resultCtx.drawImage(sampleCanvas, 0, 0, canvas.width, sampleHeight, 0, destY, canvas.width, singleStripHeight);
+                    
+                    // 添加优化后的分隔线
+                    if (i > 0) {
+                        // 创建更细腻的渐变
+                        const gradient = resultCtx.createLinearGradient(0, destY - 3, 0, destY + 3);
+                        gradient.addColorStop(0, 'rgba(178, 34, 34, 0)');
+                        gradient.addColorStop(0.4, 'rgba(178, 34, 34, 0.5)');
+                        gradient.addColorStop(0.5, 'rgba(178, 34, 34, 0.7)');
+                        gradient.addColorStop(0.6, 'rgba(178, 34, 34, 0.5)');
+                        gradient.addColorStop(1, 'rgba(178, 34, 34, 0)');
+                        
+                        // 绘制渐变分隔线
+                        resultCtx.fillStyle = gradient;
+                        resultCtx.fillRect(0, destY - 3, resultCanvas.width, 6);
+                    }
+                    
+                    // 计算文本位置
+                    const textY = destY + singleStripHeight/2;
+                    
+                    // 添加文字效果 - 使用更清晰的字体效果
+                    resultCtx.font = `bold ${fontSizeValue}px "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif`;
+                    resultCtx.textAlign = 'center';
+                    resultCtx.textBaseline = 'middle';
+                    
+                    // 添加优化后的文字阴影
+                    resultCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                    resultCtx.shadowBlur = Math.max(4, fontSizeValue / 6); // 根据字体大小调整阴影模糊度
+                    resultCtx.shadowOffsetX = 1.5;
+                    resultCtx.shadowOffsetY = 1.5;
+                    
+                    // 绘制字幕文字
+                    resultCtx.fillStyle = textColor.value;
+                    resultCtx.fillText(subtitles[i], resultCanvas.width / 2, textY);
+                    
+                    // 清除阴影设置
+                    resultCtx.shadowColor = 'transparent';
+                    resultCtx.shadowBlur = 0;
+                    resultCtx.shadowOffsetX = 0;
+                    resultCtx.shadowOffsetY = 0;
+                }
+                
+                // 添加水印
+                if (watermarkText.value) {
+                    resultCtx.font = '18px "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif';
+                    resultCtx.textAlign = 'right';
+                    resultCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    resultCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                    resultCtx.shadowBlur = 2;
+                    resultCtx.shadowOffsetX = 1;
+                    resultCtx.shadowOffsetY = 1;
+                    resultCtx.fillText(watermarkText.value, resultCanvas.width - 15, 25);
+                    resultCtx.shadowBlur = 0;
+                    resultCtx.shadowOffsetX = 0;
+                    resultCtx.shadowOffsetY = 0;
+                }
+                
+                // 将canvas转为图片并显示
+                normalResultImageUrl = resultCanvas.toDataURL('image/png');
+                normalStyleResult.innerHTML = `<img src="${normalResultImageUrl}" alt="透明背景字幕图片">`;
+            }
+            
+            // 创建半透明背景样式图片
+            function createTranslucentStyleImage(subtitles) {
+                // 创建一个canvas元素
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // 设置画布大小
+                canvas.width = uploadedImage.width;
+                canvas.height = uploadedImage.height;
+                
+                // 绘制原始图片
+                ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+                
+                // 字幕设置
+                const fontSizeValue = parseInt(fontSize.value);
+                
+                // 字幕区域高度计算 - 使用字体大小的2倍作为行高
+                const singleStripHeight = fontSizeValue * 2;
+                const totalSubtitles = subtitles.length;
+                const subtitleAreaHeight = totalSubtitles * singleStripHeight;
+                const subtitleAreaY = canvas.height - subtitleAreaHeight;
+                
+                // 创建一个新的canvas
+                const resultCanvas = document.createElement('canvas');
+                const resultCtx = resultCanvas.getContext('2d');
+                resultCanvas.width = canvas.width;
+                resultCanvas.height = canvas.height;
+                
+                // 绘制完整原图
+                resultCtx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+                
+                // 在底部添加半透明背景 - 使用更适合的透明度
+                resultCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+                resultCtx.fillRect(0, subtitleAreaY, canvas.width, subtitleAreaHeight);
+                
+                // 为每行字幕添加文字
+                for (let i = 0; i < totalSubtitles; i++) {
+                    // 计算当前字幕位置
+                    const textY = subtitleAreaY + (i * singleStripHeight) + singleStripHeight/2;
+                    
+                    // 添加优化后的分隔线
+                    if (i > 0) {
+                        // 使用渐变分隔线
+                        const gradient = resultCtx.createLinearGradient(0, subtitleAreaY + i * singleStripHeight - 1, 0, subtitleAreaY + i * singleStripHeight + 1);
+                        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+                        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.35)');
+                        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+                        
+                        resultCtx.fillStyle = gradient;
+                        resultCtx.fillRect(0, subtitleAreaY + i * singleStripHeight - 1, canvas.width, 2);
+                    }
+                    
+                    // 添加文字效果
+                    resultCtx.font = `bold ${fontSizeValue}px "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif`;
+                    resultCtx.textAlign = 'center';
+                    resultCtx.textBaseline = 'middle';
+                    
+                    // 给半透明背景的文字添加轻微阴影，增强可读性
+                    resultCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                    resultCtx.shadowBlur = Math.max(3, fontSizeValue / 8);
+                    resultCtx.shadowOffsetX = 1;
+                    resultCtx.shadowOffsetY = 1;
+                    
+                    // 绘制字幕文字
+                    resultCtx.fillStyle = textColor.value;
+                    resultCtx.fillText(subtitles[i], resultCanvas.width / 2, textY);
+                    
+                    // 清除阴影设置
+                    resultCtx.shadowColor = 'transparent';
+                    resultCtx.shadowBlur = 0;
+                    resultCtx.shadowOffsetX = 0;
+                    resultCtx.shadowOffsetY = 0;
+                }
+                
+                // 添加水印
+                if (watermarkText.value) {
+                    resultCtx.font = '18px "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif';
+                    resultCtx.textAlign = 'right';
+                    resultCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    resultCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                    resultCtx.shadowBlur = 2;
+                    resultCtx.shadowOffsetX = 1;
+                    resultCtx.shadowOffsetY = 1;
+                    resultCtx.fillText(watermarkText.value, resultCanvas.width - 15, 25);
+                    resultCtx.shadowBlur = 0;
+                    resultCtx.shadowOffsetX = 0;
+                    resultCtx.shadowOffsetY = 0;
+                }
+                
+                // 将canvas转为图片并显示
+                translucentResultImageUrl = resultCanvas.toDataURL('image/png');
+                translucentStyleResult.innerHTML = `<img src="${translucentResultImageUrl}" alt="半透明背景字幕图片">`;
+            }
+            
+            // 下载生成的图片
+            downloadBtn.addEventListener('click', function() {
+                let imageUrl;
+                if (activeResultStyle === 'normal') {
+                    imageUrl = normalResultImageUrl;
+                } else {
+                    imageUrl = translucentResultImageUrl;
+                }
+                
+                if (!imageUrl) return;
+                
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = `字幕图片_${activeResultStyle === 'normal' ? '透明背景' : '半透明背景'}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
+</body>
+</html> 
